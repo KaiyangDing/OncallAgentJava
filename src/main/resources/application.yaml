@@ -2,6 +2,24 @@ spring:
   application:
     name: oncall-agent
 
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}
+      embedding:
+        options:
+          model: text-embedding-v4
+    vectorstore:
+      milvus:
+        client:
+          host: localhost
+          port: 19530
+        database-name: default
+        collection-name: oncall_knowledge
+        embedding-dimension: 1024
+        index-type: IVF_FLAT
+        metric-type: COSINE
+        initialize-schema: true
+
 logging:
   pattern:
     level: "%5p [%X{requestId:-}]"
