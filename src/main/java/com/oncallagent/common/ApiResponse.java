@@ -1,4 +1,4 @@
-package com.oncallagent.api;
+package com.oncallagent.common;
 
 /**
  * 统一 API 响应信封。
