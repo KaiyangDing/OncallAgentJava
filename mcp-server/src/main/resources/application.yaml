@@ -1,0 +1,11 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ops-mcp-server
+  ai:
+    mcp:
+      server:
+        name: ops-mcp-server
+        version: 1.0.0

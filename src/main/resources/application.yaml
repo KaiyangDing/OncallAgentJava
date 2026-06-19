@@ -3,6 +3,14 @@ spring:
     name: oncall-agent
 
   ai:
+    mcp:
+      client:
+        enabled: true
+        type: SYNC
+        sse:
+          connections:
+            ops:
+              url: http://localhost:8081
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
       chat:
