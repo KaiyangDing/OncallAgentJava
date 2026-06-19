@@ -1,3 +1,7 @@
 spring:
   application:
     name: oncall-agent
+
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"
