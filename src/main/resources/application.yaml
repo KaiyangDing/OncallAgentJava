@@ -5,6 +5,9 @@ spring:
   ai:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: qwen-max
       embedding:
         options:
           model: text-embedding-v4
@@ -23,3 +26,8 @@ spring:
 logging:
   pattern:
     level: "%5p [%X{requestId:-}]"
+
+oncall:
+  knowledge:
+    top-k: 4
+    similarity-threshold: 0.5
