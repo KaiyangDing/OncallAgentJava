@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OnCall Agent</title>
+    <style>
+        :root { --bg:#0f172a; --card:#1e293b; --fg:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --border:#334155; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+        .wrap { max-width: 860px; margin: 0 auto; padding: 24px; }
+        h1 { font-size: 20px; }
+        .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
+        .card h2 { font-size:15px; margin:0 0 12px; color:var(--accent); }
+        textarea, input[type=text] { width:100%; background:#0b1220; color:var(--fg); border:1px solid var(--border); border-radius:8px; padding:10px; font:inherit; }
+        button { background:var(--accent); color:#04283a; border:none; border-radius:8px; padding:10px 16px; cursor:pointer; font-weight:600; font:inherit; }
+        button:disabled { opacity:.5; cursor:default; }
+        .row { display:flex; gap:8px; }
+        .row > input { flex:1; }
+        pre { white-space:pre-wrap; word-break:break-word; background:#0b1220; border:1px solid var(--border); border-radius:8px; padding:12px; margin:12px 0 0; max-height:360px; overflow:auto; }
+        .msg { margin:8px 0; }
+        .msg .who { color:var(--muted); font-size:12px; }
+        .err { color:#f87171; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>🛠️ OnCall Agent</h1>
+
+    <div class="card">
+        <h2>RAG 对话</h2>
+        <div id="chatLog"></div>
+        <div class="row">
+            <input id="chatInput" type="text" placeholder="问我运维问题…" />
+            <button id="chatSend">发送</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>上传知识文档</h2>
+        <div class="row">
+            <input id="fileInput" type="file" accept=".md,.txt" />
+            <button id="uploadBtn">上传</button>
+        </div>
+        <pre id="uploadOut" style="display:none"></pre>
+    </div>
+
+    <div class="card">
+        <h2>AIOps 自动诊断</h2>
+        <button id="diagBtn">诊断当前告警</button>
+        <pre id="diagOut" style="display:none"></pre>
+    </div>
+</div>
+
+<script>
+    const conversationId = 'web-' + Math.random().toString(36).slice(2);
+
+    async function api(path, options) {
+        const res = await fetch(path, options);
+        const body = await res.json();
+        if (!body.success) throw new Error(body.error?.message || '请求失败');
+        return body.data;
+    }
+
+    const chatLog = document.getElementById('chatLog');
+    const chatInput = document.getElementById('chatInput');
+    const chatSend = document.getElementById('chatSend');
+
+    function addMsg(who, text) {
+        const div = document.createElement('div');
+        div.className = 'msg';
+        const w = document.createElement('div'); w.className = 'who'; w.textContent = who;
+        const b = document.createElement('div'); b.textContent = text;
+        div.append(w, b); chatLog.append(div); chatLog.scrollTop = chatLog.scrollHeight;
+        return b;
+    }
+
+    async function sendChat() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+        chatInput.value = '';
+        addMsg('你', message);
+        chatSend.disabled = true;
+        const out = addMsg('助手', '思考中…');
+        try {
+            const data = await api('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conversationId, message }),
+            });
+            out.textContent = data.reply;
+        } catch (e) { out.textContent = e.message; out.classList.add('err'); }
+        finally { chatSend.disabled = false; }
+    }
+    chatSend.onclick = sendChat;
+    chatInput.onkeydown = (e) => { if (e.key === 'Enter') sendChat(); };
+
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const uploadOut = document.getElementById('uploadOut');
+    uploadBtn.onclick = async () => {
+        if (!fileInput.files.length) return;
+        uploadBtn.disabled = true; uploadOut.style.display = 'block'; uploadOut.textContent = '上传中…';
+        try {
+            const form = new FormData(); form.append('file', fileInput.files[0]);
+            const data = await api('/api/documents', { method: 'POST', body: form });
+            uploadOut.textContent = `已入库:${data.source}(${data.chunks} 块)`;
+        } catch (e) { uploadOut.textContent = e.message; }
+        finally { uploadBtn.disabled = false; }
+    };
+
+    const diagBtn = document.getElementById('diagBtn');
+    const diagOut = document.getElementById('diagOut');
+    diagBtn.onclick = async () => {
+        diagBtn.disabled = true; diagOut.style.display = 'block';
+        diagOut.textContent = '诊断中…(plan → execute ↔ replan,需要一会儿)';
+        try {
+            const data = await api('/api/diagnosis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            });
+            diagOut.textContent = data.report;
+        } catch (e) { diagOut.textContent = e.message; }
+        finally { diagBtn.disabled = false; }
+    };
+</script>
+</body>
+</html>
